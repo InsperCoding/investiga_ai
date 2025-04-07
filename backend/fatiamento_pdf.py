@@ -1,10 +1,12 @@
 import re
+from typing import Any
+
 from openpyxl import Workbook
 from datetime import datetime, timedelta
 import pdfplumber
 
 # Função para extrair IP e horário de acesso de uma linha
-def extrair_dados(linha):
+def extrair_dados(linha: str) -> tuple[str, str] | tuple[None, None]:
     # Padrão mais flexível para capturar diferentes formatos de IPs e horários
     match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?(\d{2}:\d{2}:\d{2})', linha)
     if match:
@@ -14,7 +16,7 @@ def extrair_dados(linha):
     return None, None
 
 # Função para ler o PDF com pdfplumber
-def ler_pdf_com_pdfplumber(caminho_pdf):
+def ler_pdf_com_pdfplumber(caminho_pdf: str) -> list[str]:
     linhas = []
     try:
         with pdfplumber.open(caminho_pdf) as pdf:
@@ -27,7 +29,7 @@ def ler_pdf_com_pdfplumber(caminho_pdf):
     return linhas
 
 # Função principal para processar o PDF e gerar a planilha
-def processar_pdf_para_excel(caminho_pdf, caminho_excel):
+def processar_pdf_para_excel(caminho_pdf: str, caminho_excel: str) -> None:
     print(f"Iniciando processamento do arquivo: {caminho_pdf}")
     
     # Ler o PDF
@@ -76,8 +78,12 @@ def processar_pdf_para_excel(caminho_pdf, caminho_excel):
     except Exception as e:
         print(f"Erro ao salvar planilha: {e}")
 
+
 # Exemplo de uso
-if __name__ == "__main__":
+def main() -> None:
     caminho_pdf = "ips_com_horarios.pdf"
     caminho_excel = "resultado.xlsx"
     processar_pdf_para_excel(caminho_pdf, caminho_excel)
+
+if __name__ == "__main__":
+    main()
