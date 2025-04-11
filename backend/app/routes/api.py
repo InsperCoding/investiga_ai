@@ -28,26 +28,29 @@ async def upload_pdf(file: UploadFile = File(...)):
     
     raw_ips = pdf_service.extract_ips_from_pdf(file_path)
     ipv4, ipv6, combined = pdf_service.clean_ips(raw_ips)
-    
-    return JSONResponse(content={"ipv4": ipv4, "ipv6": ipv6, "total": len(combined)})
+    resp_ipv4_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=ipv4))
+    resp_ipv6_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=ipv6))
+    # chamada do check-virustotal para cada IP
+    resp_ipv4_virustotal = ip_service.checar_virustotal(IPList(ips=ipv4), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca")
+    resp_ipv6_virustotal = ip_service.checar_virustotal(IPList(ips=ipv6), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca") 
+    # whois
+    resp_ipv4_whois = whois_service.consultar_whois(IPList(ips=ipv4))
+    resp_ipv6_whois = whois_service.consultar_whois(IPList(ips=ipv6))
+    resp_ipv4 = {}
+    resp_ipv6 = {}
+    # juntar tudo
+    for ip in ipv4:
+        resp_ipv4[ip] = {
+            "consulta_api_ip": resp_ipv4_consulta_api_ip[ip],
+            "virustotal": resp_ipv4_virustotal[ip],
+            "whois": resp_ipv4_whois[ip]
+        }
+    for ip in ipv6:
+        resp_ipv6[ip] = {
+            "consulta_api_ip": resp_ipv6_consulta_api_ip[ip],
+            "virustotal": resp_ipv6_virustotal[ip],
+            "whois": resp_ipv6_whois[ip]
+        }
 
-@router.post("/check-ip/")
-async def check_ip_info(ip: str = Form(...)):
-    data = ip_service.consultar_api_ip(ip)
-    return data
 
-@router.post("/check-virustotal/")
-async def check_virustotal(ip: str = Form(...)):
-    api_key = "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca"  # Recomenda-se externalizar a chave
-    resultado = ip_service.checar_virustotal(ip, api_key)
-    return resultado
-
-@router.post("/check-whois/")
-async def check_whois(data: IPList):
-    try:
-        resultados = whois_service.consultar_whois(data.ips)
-        df = pd.DataFrame(resultados)
-        df.to_excel("Resultados_WHOIS.xlsx", index=False)
-        return {"resultados": resultados, "mensagem": "Consulta realizada com sucesso!"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return JSONResponse(content={"ipv4": resp_ipv4, "ipv6": resp_ipv6, "total": len(combined)})

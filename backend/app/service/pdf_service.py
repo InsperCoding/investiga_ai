@@ -1,17 +1,17 @@
 import fitz
-from langchain.llms import Ollama
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import re
+from langchain_ollama import OllamaLLM
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableSequence
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Instancia o modelo com Ollama
-llm = Ollama(model="mistral", temperature=0.0)
+llm = OllamaLLM(model="mistral", temperature=0.0)
 
 # Define o prompt para extração de IPs
 prompt = PromptTemplate(
     input_variables=["chunk"],
-    template = """
+    template="""
     You must extract all IP addresses from the following text:
     {chunk}
     
@@ -22,15 +22,15 @@ prompt = PromptTemplate(
     """
 )
 
-# Cria a cadeia de execução com o modelo e o prompt
-chain = LLMChain(llm=llm, prompt=prompt)
+# Nova forma de encadear prompt com LLM usando `RunnableSequence`
+chain = prompt | llm
 
-def read_pdf_text(path: str) -> str:
-    """
-    Lê o conteúdo textual de um PDF.
-    """
+def read_pdf_text(path):
     doc = fitz.open(path)
-    return "".join(page.get_text() for page in doc)
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
 
 def split_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100) -> list:
     """
@@ -58,7 +58,7 @@ def extract_ips_from_pdf(pdf_path: str) -> list:
     chunks = split_text(text)
     ips = []
     for chunk in chunks:
-        result = chain.run(chunk)
+        result = chain.invoke({"chunk": chunk})
         ips += extract_valid_ips(result)
     return ips
 
