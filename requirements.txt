@@ -1,13 +1,9 @@
-fitz  # substituído por PyMuPDF abaixo
-PyMuPDF==1.23.22
-langchain==0.1.16
-ollama==0.1.7
-openai  # pode ser necessário dependendo da versão do langchain e modelo usado
-requests==2.31.0
-pandas==2.2.2
-selenium==4.19.0
-fastapi==0.110.1
-uvicorn==0.29.0
-python-multipart==0.0.9  # necessário para uploads via FastAPI
-tools
-langchain-community
+fastapi
+uvicorn[standard]
+requests
+PyMuPDF
+langchain
+selenium
+pandas
+jinja2
+langchain_community
