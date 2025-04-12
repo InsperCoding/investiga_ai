@@ -6,15 +6,16 @@ document.getElementById("language-button").addEventListener("click", () => {
     const customFileUpload = document.getElementById("custom-file-upload"); // Label do botão "Escolher Arquivo"
     const uploadButton = document.getElementById("upload-button");
 
-    if (flagIcon.getAttribute("src") === "img/us_flag.png") {
+    // Verifica o idioma atual com base no atributo "alt" da bandeira
+    if (flagIcon.getAttribute("alt") === "English") {
         // Mudar para português
         flagIcon.setAttribute("src", "img/bandeira_brasil.jpg");
         flagIcon.setAttribute("alt", "Português");
         languageButton.textContent = " PT";
         languageButton.prepend(flagIcon);
-        title.textContent = "Pesquisar IP";
-        uploadText.textContent = "Faça upload do arquivo .pdf ou da planilha";
-        customFileUpload.textContent = "Escolher Arquivo"; // Atualiza o texto do botão "Escolher Arquivo"
+        title.textContent = "Search IP";
+        uploadText.textContent = "Upload the .pdf file or spreadsheet";
+        customFileUpload.textContent = "Choose File"; // Atualiza o texto do botão "Escolher Arquivo"
         uploadButton.textContent = "Upload";
     } else {
         // Mudar para inglês
@@ -22,9 +23,9 @@ document.getElementById("language-button").addEventListener("click", () => {
         flagIcon.setAttribute("alt", "English");
         languageButton.textContent = " EN";
         languageButton.prepend(flagIcon);
-        title.textContent = "Search IP";
-        uploadText.textContent = "Upload the .pdf file or spreadsheet";
-        customFileUpload.textContent = "Choose File"; // Atualiza o texto do botão "Choose File"
+        title.textContent = "Procurar IP";
+        uploadText.textContent = "Faça upload do arquivo .pdf ou da planilha";
+        customFileUpload.textContent = "Escolher Arquivo"; 
         uploadButton.textContent = "Upload";
     }
 });
