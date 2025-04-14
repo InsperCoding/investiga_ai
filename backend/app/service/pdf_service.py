@@ -16,8 +16,8 @@ prompt = PromptTemplate(
     {chunk}
     
     Rules:
-    1. Return ONLY the list of IP addresses.
-    2. Each IP must be on a separate line.
+    1. Return ONLY the list of IP addresses with the related time.
+    2. Each IP must be on a separate line with the time.
     3. Do NOT include any explanation or formatting.
     """
 )
