@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+requests
+PyMuPDF
+langchain
+selenium
+pandas
+jinja2
+langchain_community
