@@ -50,7 +50,7 @@ jobs:
           chmod 600 private-key.pem
       - name: Pull Docker image and deploy
         run: |
-          ssh_user=investigaai  # ou investigaai, depende do usuário SSH
+          ssh_user=investigaaiip  # ou investigaai, depende do usuário SSH
           ip_address=34.44.247.78
           image_name=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-backend:latest
           container_name=investiga_ai-backend
