@@ -65,7 +65,7 @@ jobs:
       - name: Pull Backend and Frontend Docker images and Deploy
         run: |
           ssh_user=investigaaiip
-          ip_address=35.239.230.64
+          ip_address=34.44.247.78
           backend_image=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-backend:latest
           backend_container=investiga_ai-backend
           frontend_image=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-frontend:latest
