@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -17,21 +16,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image
+
+      # Build do Backend
+      - name: Build and push Backend Docker image
         uses: docker/build-push-action@v2
         with:
-          context: ./backend/ 
+          context: ./backend/
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/investiga_ai-backend:latest
           dockerfile: ./backend/Dockerfile
 
+      # Build do Frontend
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./frontend/
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/investiga_ai-frontend:latest
+          dockerfile: ./frontend/Dockerfile
 
   deploy:
     needs: build
@@ -39,25 +50,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
+
       - name: Set permissions for private key
         run: |
           echo "${{ env.CGP_PRIVATE_KEY }}" > private-key.pem
           chmod 600 private-key.pem
-      - name: Pull Docker image and deploy
+
+      - name: Pull Backend and Frontend Docker images and Deploy
         run: |
           ssh_user=investigaaiip
           ip_address=35.239.230.64
-          image_name=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-backend:latest
-          container_name=investiga_ai-backend
+          backend_image=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-backend:latest
+          backend_container=investiga_ai-backend
+          frontend_image=${{ env.DOCKERHUB_USERNAME }}/investiga_ai-frontend:latest
+          frontend_container=investiga_ai-frontend
           network_name=investiga_ai-network
 
           ssh -o StrictHostKeyChecking=no -i private-key.pem $ssh_user@$ip_address '
-            sudo docker pull '$image_name' &&
-            sudo docker stop '$container_name' || true &&
-            sudo docker rm -f '$container_name' || true &&
-            sudo docker run --env-file .env --name '$container_name' --network '$network_name' --restart always -d -p 8010:8010 '$image_name''
+            # Backend
+            sudo docker pull '$backend_image' &&
+            sudo docker stop '$backend_container' || true &&
+            sudo docker rm -f '$backend_container' || true &&
+            sudo docker run --env-file /caminho/do/seu/.env --name '$backend_container' --network '$network_name' --restart always -d -p 8010:8010 '$backend_image'
+
+            # Frontend
+            sudo docker pull '$frontend_image' &&
+            sudo docker stop '$frontend_container' || true &&
+            sudo docker rm -f '$frontend_container' || true &&
+            sudo docker run --name '$frontend_container' --restart always -d -p 80:80 '$frontend_image'
+          '
