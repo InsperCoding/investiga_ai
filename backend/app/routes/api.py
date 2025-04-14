@@ -26,31 +26,21 @@ async def upload_pdf(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    raw_ips = pdf_service.extract_ips_from_pdf(file_path)
-    ipv4, ipv6, combined = pdf_service.clean_ips(raw_ips)
-    resp_ipv4_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=ipv4))
-    resp_ipv6_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=ipv6))
+    df_ips = pdf_service.extract_ips_from_pdf(file_path)
+    resp_ip_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=df_ips["IP"].tolist()))
     # chamada do check-virustotal para cada IP
-    resp_ipv4_virustotal = ip_service.checar_virustotal(IPList(ips=ipv4), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca")
-    resp_ipv6_virustotal = ip_service.checar_virustotal(IPList(ips=ipv6), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca") 
+    resp_ip_virustotal = ip_service.checar_virustotal(IPList(ips=df_ips["IP"].tolist()), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca")
     # whois
-    resp_ipv4_whois = whois_service.consultar_whois(IPList(ips=ipv4))
-    resp_ipv6_whois = whois_service.consultar_whois(IPList(ips=ipv6))
-    resp_ipv4 = {}
-    resp_ipv6 = {}
+    resp_ip_whois = whois_service.consultar_whois(IPList(ips=df_ips["IP"].tolist()))
+
+    resp_ip = {}
     # juntar tudo
-    for ip in ipv4:
-        resp_ipv4[ip] = {
-            "consulta_api_ip": resp_ipv4_consulta_api_ip[ip],
-            "virustotal": resp_ipv4_virustotal[ip],
-            "whois": resp_ipv4_whois[ip]
-        }
-    for ip in ipv6:
-        resp_ipv6[ip] = {
-            "consulta_api_ip": resp_ipv6_consulta_api_ip[ip],
-            "virustotal": resp_ipv6_virustotal[ip],
-            "whois": resp_ipv6_whois[ip]
+    for ip in df_ips["IP"].tolist():
+        resp_ip[ip] = {
+            "consulta_api_ip": resp_ip_consulta_api_ip[ip],
+            "virustotal": resp_ip_virustotal[ip],
+            "whois": resp_ip_whois[ip]
         }
 
 
-    return JSONResponse(content={"ipv4": resp_ipv4, "ipv6": resp_ipv6, "total": len(combined)})
+    return JSONResponse(content={"ip": resp_ip})

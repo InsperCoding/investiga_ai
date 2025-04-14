@@ -1,49 +1,78 @@
-import fitz
-import re
-from langchain_ollama import OllamaLLM
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableSequence
+import os
+import openai
+from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.document_loaders import TextLoader
+from dotenv import load_dotenv
 
-# Instancia o modelo com Ollama
-llm = OllamaLLM(model="mistral", temperature=0.0)
+# Carregar variáveis de ambiente
+load_dotenv()
 
-# Define o prompt para extração de IPs
-prompt = PromptTemplate(
-    input_variables=["chunk"],
-    template="""
-    You must extract all IP addresses from the following text:
-    {chunk}
-    
-    Rules:
-    1. Return ONLY the list of IP addresses.
-    2. Each IP must be on a separate line.
-    3. Do NOT include any explanation or formatting.
-    """
-)
+# Configurar chave da API do OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Nova forma de encadear prompt com LLM usando `RunnableSequence`
-chain = prompt | llm
-
-def read_pdf_text(path):
-    doc = fitz.open(path)
+# Função para ler o PDF e dividir em chunks
+def load_and_split_pdf(pdf_path):
+    # Ler o PDF
+    reader = PdfReader(pdf_path)
     text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    
+    for page in reader.pages:
+        text += page.extract_text()
+    
+    # Dividir o texto em chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = text_splitter.split_text(text)
+    
+    return chunks
 
-def split_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100) -> list:
-    """
-    Divide o texto em pedaços menores para facilitar o processamento.
-    """
-    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    return splitter.split_text(text)
+def create_vector_store(chunks):
+    embeddings = OpenAIEmbeddings()
+    vector_store = FAISS.from_texts(chunks, embeddings)
+    return vector_store
 
-def extract_valid_ips(text: str) -> list:
-    """
-    Extrai endereços IPv4 válidos a partir de um texto utilizando regex.
-    """
-    return re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', text)
+from langchain.llms import OpenAI  # Certifique-se de importar a classe OpenAI
+from langchain.chains import RetrievalQA
+
+def query_rag(question, vector_store):
+    # Usando OpenAI LLM com a chave da API
+    llm = OpenAI(model_name="text-davinci-003", temperature=0, openai_api_key=openai.api_key)
+    
+    # Criar a cadeia de perguntas e respostas com o retriever
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",  # Ou outro tipo dependendo do seu caso
+        retriever=vector_store.as_retriever(),
+    )
+    
+    # Obter a resposta
+    response = qa_chain.run(question)
+    
+    return response
+
+import pandas as pd
+
+def texto_para_df(texto):
+    # Criando uma lista de dicionários, onde cada dicionário é uma linha do DataFrame
+    dados = []
+    
+    # Dividir o texto em linhas
+    linhas = texto.split('\n')
+    
+    for linha in linhas:
+        # Separar o texto antes de " - " como IP e o restante como datetime
+        partes = linha.split(' - ')
+        if len(partes) == 2:
+            ip = partes[0]
+            datetime = partes[1]
+            dados.append({"IP": ip, "Datetime": datetime})
+    
+    # Criar o DataFrame a partir da lista de dicionários
+    df = pd.DataFrame(dados)
+    return df
 
 def extract_ips_from_pdf(pdf_path: str) -> list:
     """
@@ -54,23 +83,27 @@ def extract_ips_from_pdf(pdf_path: str) -> list:
       4. Usa expressões regulares para filtrar IPs válidos.
     Retorna uma lista com todos os IPs extraídos.
     """
-    text = read_pdf_text(pdf_path)
-    chunks = split_text(text)
-    ips = []
-    for chunk in chunks:
-        result = chain.invoke({"chunk": chunk})
-        ips += extract_valid_ips(result)
-    return ips
+    chunks = load_and_split_pdf(pdf_path)
+    vector_store = create_vector_store(chunks)
 
-def clean_ips(raw_ips: list) -> tuple:
+    question = """
+        You are an expert in analyzing raw logs and unstructured text. Your task is to extract **all IP addresses (IPv4 and IPv6)** and the **exact timestamp** associated with each IP.
+
+        Instructions:
+        1. From the text below, find all valid IPv4 and IPv6 addresses.
+        2. For each IP address, find the **full date and time** (timestamp) that appears **closest and most directly associated** with that IP.
+        3. Return only the IP address and its timestamp in this exact format: `IP_ADDRESS - TIMESTAMP`
+        4. Check if the IP address has a timestamp associated with it. If not, do not include it in the results.
+        5. If multiple timestamps are present near the same IP, choose the most **complete and specific one** (e.g., including date + time + timezone if possible).
+        6. Each result must be on a **separate line**.
+        7. Do NOT include any explanation, markdown, bullet points, or extra formatting.
+
+
+        Text:
+        {chunk}
     """
-    Recebe uma lista de IPs em formato bruto e retorna três listas:
-      - Lista de IPs IPv4
-      - Lista de IPs IPv6
-      - Lista combinada (união dos anteriores)
-    """
-    ipv4_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
-    ipv6_pattern = r'\b(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}\b'
-    ipv4_list = re.findall(ipv4_pattern, "\n".join(raw_ips))
-    ipv6_list = re.findall(ipv6_pattern, "\n".join(raw_ips))
-    return sorted(set(ipv4_list)), sorted(set(ipv6_list)), list(set(ipv4_list + ipv6_list))
+    response = query_rag(question, vector_store)
+
+    df = texto_para_df(response)
+
+    return df
