@@ -1,0 +1,63 @@
+name: Build on DockerHub and Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  CGP_PRIVATE_KEY: ${{ secrets.CGP_PRIVATE_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./backend/ 
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/investigaAI-backend:latest
+          dockerfile: ./backend/Dockerfile
+
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - name: Set permissions for private key
+        run: |
+          echo "${{ env.CGP_PRIVATE_KEY }}" > private-key.pem
+          chmod 600 private-key.pem
+      - name: Pull Docker image and deploy
+        run: |
+          ssh_user=investigaai  # ou investigaai, depende do usuário SSH
+          ip_address=34.44.247.78
+          image_name=${{ env.DOCKERHUB_USERNAME }}/investigaAI-backend:latest
+          container_name=investigaAI-backend
+          network_name=investigaAI-network
+
+          ssh -o StrictHostKeyChecking=no -i private-key.pem $ssh_user@$ip_address '
+            sudo docker pull '$image_name' &&
+            sudo docker stop '$container_name' || true &&
+            sudo docker rm -f '$container_name' || true &&
+            sudo docker run --env-file .env --name '$container_name' --network '$network_name' --restart always -d -p 8010:8010 '$image_name''
