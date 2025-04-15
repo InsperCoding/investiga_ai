@@ -68,6 +68,23 @@ function showFileSelectedMessage(fileName) {
     fileMessageDiv.textContent = "Arquivo selecionado: " + fileName;
 }
 
+// Função para exibir a mensagem de arquivo selecionado
+function showFileSelectedMessage(fileName) {
+    let fileMessageDiv = document.getElementById("file-selected-message");
+    if (!fileMessageDiv) {
+        fileMessageDiv = document.createElement("div");
+        fileMessageDiv.id = "file-selected-message";
+        // Estilo opcional para a mensagem
+        fileMessageDiv.style.marginTop = "10px";
+        fileMessageDiv.style.fontStyle = "italic";
+        fileMessageDiv.style.color = "#ffffff";
+        // Insere a mensagem dentro do container principal (ou no body, se não encontrar o container)
+        const container = document.querySelector(".container") || document.body;
+        container.appendChild(fileMessageDiv);
+    }
+    fileMessageDiv.textContent = "Arquivo selecionado: " + fileName;
+}
+
 // Função para exibir uma notificação de sucesso no canto superior direito
 function showUploadSuccessMessage(message) {
     let successDiv = document.getElementById("upload-success");
@@ -95,16 +112,23 @@ function showUploadSuccessMessage(message) {
     }, 3000);
 }
 
-// Aguarda o carregamento do DOM
+// Aguarda o carregamento completo do DOM para adicionar os eventos
 document.addEventListener("DOMContentLoaded", () => {
+    const fileInput = document.getElementById("file-upload");
     const uploadForm = document.getElementById("upload-form");
 
-    // Intercepta o envio do formulário
-    uploadForm.addEventListener("submit", (event) => {
-        event.preventDefault(); // Impede o comportamento padrão do formulário
+    // Exibe uma mensagem assim que o usuário seleciona um arquivo
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+            showFileSelectedMessage(fileInput.files[0].name);
+        }
+    });
 
-        // Recupera o arquivo selecionado
-        const fileInput = document.getElementById("file-upload");
+    // Ao submeter o formulário, envia o arquivo para o backend via fetch
+    uploadForm.addEventListener("submit", (event) => {
+        event.preventDefault(); // Impede o envio padrão do formulário
+
+        // Verifica se há um arquivo selecionado
         if (fileInput.files.length === 0) {
             alert("Por favor, selecione um arquivo.");
             return;
@@ -113,6 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Cria um objeto FormData e adiciona o arquivo
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
+
+        let carregando = true;
+
+        if (carregando) {
+            // Exibe a mensagem de carregamento
+            showUploadSuccessMessage("Carregando...");
+        }
 
         // Envia a requisição POST para o backend
         fetch("http://localhost:8000/upload-pdf/", {
@@ -123,28 +154,29 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!response.ok) {
                 throw new Error("Erro ao enviar o arquivo.");
             }
-            // Obtém a resposta como Blob (arquivo Excel)
+            // Converte a resposta para Blob (supondo que seja o arquivo Excel)
             return response.blob();
         })
         .then(blob => {
-            // Cria uma URL para o Blob recebido
+            // Cria uma URL temporária para o Blob recebido
             const url = window.URL.createObjectURL(blob);
-            // Cria um elemento <a> para acionar o download
+            // Cria um elemento <a> para simular o download
             const a = document.createElement("a");
             a.href = url;
-            // Define o nome do arquivo para download (pode ser personalizado)
-            a.download = "resultado.xlsx";
+            a.download = "resultado.xlsx"; // Define o nome para o arquivo baixado
             document.body.appendChild(a);
-            a.click(); // Simula o clique para iniciar o download
+            a.click(); // Dispara o download
             a.remove();
-            window.URL.revokeObjectURL(url); // Libera a URL criada
+            window.URL.revokeObjectURL(url); // Libera recursos
 
-            // Exibe a mensagem de upload concluído com sucesso
+            // Exibe a mensagem de sucesso
             showUploadSuccessMessage("Upload realizado com sucesso e arquivo baixado!");
+            carregando = false;
         })
         .catch(error => {
             console.error("Erro no upload:", error);
             alert("Ocorreu um erro ao enviar o arquivo.");
+            carregando = false;
         });
     });
 });
