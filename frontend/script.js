@@ -122,7 +122,8 @@ function showCarregando(display) {
         carregandoDiv.style.position = "fixed";
         carregandoDiv.style.top = "10px";
         carregandoDiv.style.right = "10px";
-        carregandoDiv.style.backgroundColor = "#f44336";
+        // mudando pra amarelo
+        carregandoDiv.style.backgroundColor = "#FF9800";
         carregandoDiv.style.color = "white";
         carregandoDiv.style.padding = "10px 15px";
         carregandoDiv.style.borderRadius = "5px";
