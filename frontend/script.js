@@ -44,13 +44,31 @@ document.getElementById("file-upload").addEventListener("change", async (event) 
         }
     }
 });
+// Função para exibir a mensagem de arquivo selecionado
+function showFileSelectedMessage(fileName) {
+    let fileMessageDiv = document.getElementById("file-selected-message");
+    if (!fileMessageDiv) {
+        fileMessageDiv = document.createElement("div");
+        fileMessageDiv.id = "file-selected-message";
+        // Estilo opcional para a mensagem
+        fileMessageDiv.style.marginTop = "10px";
+        fileMessageDiv.style.fontStyle = "italic";
+        fileMessageDiv.style.color = "#333";
+        // Insere a mensagem dentro do container principal (ou no body, se não encontrar o container)
+        const container = document.querySelector(".container") || document.body;
+        container.appendChild(fileMessageDiv);
+    }
+    fileMessageDiv.textContent = "Arquivo selecionado: " + fileName;
+}
 
-// Função para exibir uma mensagem de sucesso no canto superior direito
+// Função para exibir uma notificação de sucesso no canto superior direito
 function showUploadSuccessMessage(message) {
     let successDiv = document.getElementById("upload-success");
     if (!successDiv) {
+        // Cria o elemento se não existir
         successDiv = document.createElement("div");
         successDiv.id = "upload-success";
+        // Configura a estilização
         successDiv.style.position = "fixed";
         successDiv.style.top = "10px";
         successDiv.style.right = "10px";
