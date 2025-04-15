@@ -10,3 +10,4 @@ selenium
 python-multipart
 langchain-community
 tiktoken
+openpyxl
