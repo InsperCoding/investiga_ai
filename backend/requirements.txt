@@ -1,10 +1,10 @@
 fastapi
-uvicorn[standard]
-requests
-pymupdf
-langchain
-selenium
+uvicorn
 pandas
-jinja2
-langchain_community
+python-dotenv
 openai
+PyPDF2
+langchain
+faiss-gpu
+selenium
+python-multipart
