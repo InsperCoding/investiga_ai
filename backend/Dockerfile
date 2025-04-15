@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     gnupg \
+    jq \
     libglib2.0-0 \
     libnss3 \
     libgconf-2-4 \
