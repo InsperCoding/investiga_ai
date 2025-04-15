@@ -77,11 +77,11 @@ jobs:
             sudo docker pull '$backend_image' &&
             sudo docker stop '$backend_container' || true &&
             sudo docker rm -f '$backend_container' || true &&
-            sudo docker run --env-file /caminho/do/seu/.env --name '$backend_container' --network '$network_name' --restart always -d -p 8010:8010 '$backend_image'
+            sudo docker run --env-file /caminho/do/seu/.env --name '$backend_container' --network '$network_name' --restart always -d -p 127.0.0.1:8000:8010 '$backend_image'
 
             # Frontend
             sudo docker pull '$frontend_image' &&
             sudo docker stop '$frontend_container' || true &&
             sudo docker rm -f '$frontend_container' || true &&
-            sudo docker run --name '$frontend_container' --restart always -d -p 80:80 '$frontend_image'
+            sudo docker run --name '$frontend_container' --restart always -d -p 127.0.0.1:5000:80 '$frontend_image'
           '
