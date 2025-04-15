@@ -30,20 +30,27 @@ document.getElementById("language-button").addEventListener("click", () => {
     }
 });
 
-// Limitar o upload de PDFs a 15 páginas
 document.getElementById("file-upload").addEventListener("change", async (event) => {
     const file = event.target.files[0];
 
     if (file && file.type === "application/pdf") {
-        const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
-        const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+        // Importa o pdf.js dinamicamente
+        const pdfjsModule = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
+        // Acessa o módulo real através da propriedade "default"
+        const pdfjsLib = pdfjsModule.default;
+        
+        // Abre o documento PDF usando a URL do arquivo
+        const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+        const pdf = await loadingTask.promise;
 
+        // Verifica se o PDF possui mais de 15 páginas e, se sim, alerta o usuário e limpa o campo
         if (pdf.numPages > 15) {
             alert("O arquivo PDF não pode ter mais de 15 páginas.");
             event.target.value = ""; // Limpa o campo de upload
         }
     }
 });
+
 // Função para exibir a mensagem de arquivo selecionado
 function showFileSelectedMessage(fileName) {
     let fileMessageDiv = document.getElementById("file-selected-message");
