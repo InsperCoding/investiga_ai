@@ -8,3 +8,4 @@ langchain
 faiss-cpu
 selenium
 python-multipart
+langchain-community
