@@ -14,7 +14,7 @@ document.getElementById("language-button").addEventListener("click", () => {
         languageButton.textContent = " PT";
         languageButton.prepend(flagIcon);
         title.textContent = "Search IP";
-        uploadText.textContent = "Upload the .pdf file or spreadsheet";
+        uploadText.textContent = "Upload the .pdf file";
         customFileUpload.textContent = "Choose File"; // Atualiza o texto do botão "Escolher Arquivo"
         uploadButton.textContent = "Upload";
     } else {
@@ -24,7 +24,7 @@ document.getElementById("language-button").addEventListener("click", () => {
         languageButton.textContent = " EN";
         languageButton.prepend(flagIcon);
         title.textContent = "Procurar IP";
-        uploadText.textContent = "Faça upload do arquivo .pdf ou da planilha";
+        uploadText.textContent = "Faça upload do arquivo .pdf";
         customFileUpload.textContent = "Escolher Arquivo"; 
         uploadButton.textContent = "Upload";
     }
