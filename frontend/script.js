@@ -7,7 +7,7 @@ document.getElementById("language-button").addEventListener("click", () => {
     const uploadButton = document.getElementById("upload-button");
 
     // Verifica o idioma atual com base no atributo "alt" da bandeira
-    if (flagIcon.getAttribute("alt") === "English") {
+    if (flagIcon.getAttribute("alt") === "Portugues") {
         // Mudar para português
         flagIcon.setAttribute("src", "img/bandeira_brasil.jpg");
         flagIcon.setAttribute("alt", "Português");
@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showCarregando("block"); // Exibe a mensagem de carregando
 
         // Envia a requisição POST para o backend
-        fetch("http://localhost:8000/upload-pdf/", {
+        fetch("http://34.44.247.78:8000/upload-pdf/", {
             method: "POST",
             body: formData,
         })
