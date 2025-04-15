@@ -44,3 +44,47 @@ document.getElementById("file-upload").addEventListener("change", async (event) 
         }
     }
 });
+
+// Aguarda o carregamento completo do DOM
+document.addEventListener("DOMContentLoaded", () => {
+    // Seleciona o formulário pelo id
+    const uploadForm = document.getElementById("upload-form");
+
+    // Adiciona o listener para o evento 'submit'
+    uploadForm.addEventListener("submit", (event) => {
+        event.preventDefault(); // Impede o envio padrão do formulário
+
+        // Seleciona o input do tipo file
+        const fileInput = document.getElementById("file-upload");
+
+        // Verifica se há um arquivo selecionado
+        if (fileInput.files.length === 0) {
+            alert("Por favor, selecione um arquivo.");
+            return;
+        }
+
+        // Cria um objeto FormData para enviar o arquivo
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        // Envia a requisição POST para o backend utilizando fetch
+        fetch("http://localhost:8000/upload-pdf/", {
+            method: "POST",
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Erro ao enviar o arquivo.");
+            }
+            return response.json(); // Se o backend retornar JSON
+        })
+        .then(data => {
+            console.log("Upload bem-sucedido:", data);
+            // Aqui você pode atualizar a UI conforme a resposta do backend
+        })
+        .catch(error => {
+            console.error("Erro no upload:", error);
+            alert("Ocorreu um erro ao enviar o arquivo.");
+        });
+    });
+});

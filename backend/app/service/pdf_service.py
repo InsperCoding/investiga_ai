@@ -11,24 +11,9 @@ from dotenv import load_dotenv
 # Carregar variáveis de ambiente
 load_dotenv()
 
-<<<<<<< HEAD
-# Define o prompt para extração de IPs
-prompt = PromptTemplate(
-    input_variables=["chunk"],
-    template="""
-    You must extract all IP addresses from the following text:
-    {chunk}
-    
-    Rules:
-    1. Return ONLY the list of IP addresses with the related time.
-    2. Each IP must be on a separate line with the time.
-    3. Do NOT include any explanation or formatting.
-    """
-)
-=======
 # Configurar chave da API do OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
->>>>>>> 73ea0e9cfe13bde09b1eff000e8c955ac9378f24
+
 
 # Função para ler o PDF e dividir em chunks
 def load_and_split_pdf(pdf_path):
