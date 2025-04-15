@@ -5,6 +5,6 @@ python-dotenv
 openai
 PyPDF2
 langchain
-faiss-gpu
+faiss-cpu
 selenium
 python-multipart
