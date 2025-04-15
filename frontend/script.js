@@ -112,6 +112,29 @@ function showUploadSuccessMessage(message) {
     }, 3000);
 }
 
+function showCarregando(display) {
+    let carregandoDiv = document.getElementById("carregando");
+    if (!carregandoDiv) {
+        // Cria o elemento se não existir
+        carregandoDiv = document.createElement("div");
+        carregandoDiv.id = "carregando";
+        // Configura a estilização
+        carregandoDiv.style.position = "fixed";
+        carregandoDiv.style.top = "10px";
+        carregandoDiv.style.right = "10px";
+        carregandoDiv.style.backgroundColor = "#f44336";
+        carregandoDiv.style.color = "white";
+        carregandoDiv.style.padding = "10px 15px";
+        carregandoDiv.style.borderRadius = "5px";
+        carregandoDiv.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
+        carregandoDiv.style.zIndex = "1000";
+        carregandoDiv.style.display = "none";
+        document.body.appendChild(carregandoDiv);
+    }
+    carregandoDiv.textContent = "Carregando...";
+    carregandoDiv.style.display = display;
+}
+
 // Aguarda o carregamento completo do DOM para adicionar os eventos
 document.addEventListener("DOMContentLoaded", () => {
     const fileInput = document.getElementById("file-upload");
@@ -138,12 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
 
-        let carregando = true;
-
-        if (carregando) {
-            // Exibe a mensagem de carregamento
-            showUploadSuccessMessage("Carregando...");
-        }
+        showCarregando("block"); // Exibe a mensagem de carregando
 
         // Envia a requisição POST para o backend
         fetch("http://localhost:8000/upload-pdf/", {
@@ -170,13 +188,13 @@ document.addEventListener("DOMContentLoaded", () => {
             window.URL.revokeObjectURL(url); // Libera recursos
 
             // Exibe a mensagem de sucesso
+            showCarregando("none"); // Esconde a mensagem de carregando
             showUploadSuccessMessage("Upload realizado com sucesso e arquivo baixado!");
-            carregando = false;
         })
         .catch(error => {
             console.error("Erro no upload:", error);
             alert("Ocorreu um erro ao enviar o arquivo.");
-            carregando = false;
+            showCarregando("none"); // Esconde a mensagem de carregando
         });
     });
 });
