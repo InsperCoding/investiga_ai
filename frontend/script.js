@@ -45,6 +45,37 @@ document.getElementById("file-upload").addEventListener("change", async (event) 
     }
 });
 
+// Função para exibir uma mensagem de sucesso
+function showUploadSuccessMessage(message) {
+    // Verifica se já existe um elemento para a mensagem
+    let successDiv = document.getElementById("upload-success");
+    if (!successDiv) {
+        // Cria o elemento se não existir
+        successDiv = document.createElement("div");
+        successDiv.id = "upload-success";
+        // Estilização básica para exibir a mensagem no canto superior direito
+        successDiv.style.position = "fixed";
+        successDiv.style.top = "10px";
+        successDiv.style.right = "10px";
+        successDiv.style.backgroundColor = "#4CAF50";
+        successDiv.style.color = "white";
+        successDiv.style.padding = "10px 15px";
+        successDiv.style.borderRadius = "5px";
+        successDiv.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
+        successDiv.style.zIndex = "1000";
+        successDiv.style.display = "none";
+        document.body.appendChild(successDiv);
+    }
+    // Define o conteúdo da mensagem e exibe o elemento
+    successDiv.textContent = message;
+    successDiv.style.display = "block";
+    
+    // Após 3 segundos, oculta a mensagem
+    setTimeout(() => {
+        successDiv.style.display = "none";
+    }, 3000);
+}
+
 // Aguarda o carregamento completo do DOM
 document.addEventListener("DOMContentLoaded", () => {
     // Seleciona o formulário pelo id
