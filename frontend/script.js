@@ -45,15 +45,12 @@ document.getElementById("file-upload").addEventListener("change", async (event) 
     }
 });
 
-// Função para exibir uma mensagem de sucesso
+// Função para exibir uma mensagem de sucesso no canto superior direito
 function showUploadSuccessMessage(message) {
-    // Verifica se já existe um elemento para a mensagem
     let successDiv = document.getElementById("upload-success");
     if (!successDiv) {
-        // Cria o elemento se não existir
         successDiv = document.createElement("div");
         successDiv.id = "upload-success";
-        // Estilização básica para exibir a mensagem no canto superior direito
         successDiv.style.position = "fixed";
         successDiv.style.top = "10px";
         successDiv.style.right = "10px";
@@ -66,39 +63,33 @@ function showUploadSuccessMessage(message) {
         successDiv.style.display = "none";
         document.body.appendChild(successDiv);
     }
-    // Define o conteúdo da mensagem e exibe o elemento
     successDiv.textContent = message;
     successDiv.style.display = "block";
-    
-    // Após 3 segundos, oculta a mensagem
     setTimeout(() => {
         successDiv.style.display = "none";
     }, 3000);
 }
 
-// Aguarda o carregamento completo do DOM
+// Aguarda o carregamento do DOM
 document.addEventListener("DOMContentLoaded", () => {
-    // Seleciona o formulário pelo id
     const uploadForm = document.getElementById("upload-form");
 
-    // Adiciona o listener para o evento 'submit'
+    // Intercepta o envio do formulário
     uploadForm.addEventListener("submit", (event) => {
-        event.preventDefault(); // Impede o envio padrão do formulário
+        event.preventDefault(); // Impede o comportamento padrão do formulário
 
-        // Seleciona o input do tipo file
+        // Recupera o arquivo selecionado
         const fileInput = document.getElementById("file-upload");
-
-        // Verifica se há um arquivo selecionado
         if (fileInput.files.length === 0) {
             alert("Por favor, selecione um arquivo.");
             return;
         }
 
-        // Cria um objeto FormData para enviar o arquivo
+        // Cria um objeto FormData e adiciona o arquivo
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
 
-        // Envia a requisição POST para o backend utilizando fetch
+        // Envia a requisição POST para o backend
         fetch("http://localhost:8000/upload-pdf/", {
             method: "POST",
             body: formData,
@@ -107,11 +98,24 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!response.ok) {
                 throw new Error("Erro ao enviar o arquivo.");
             }
-            return response.json(); // Se o backend retornar JSON
+            // Obtém a resposta como Blob (arquivo Excel)
+            return response.blob();
         })
-        .then(data => {
-            console.log("Upload bem-sucedido:", data);
-            // Aqui você pode atualizar a UI conforme a resposta do backend
+        .then(blob => {
+            // Cria uma URL para o Blob recebido
+            const url = window.URL.createObjectURL(blob);
+            // Cria um elemento <a> para acionar o download
+            const a = document.createElement("a");
+            a.href = url;
+            // Define o nome do arquivo para download (pode ser personalizado)
+            a.download = "resultado.xlsx";
+            document.body.appendChild(a);
+            a.click(); // Simula o clique para iniciar o download
+            a.remove();
+            window.URL.revokeObjectURL(url); // Libera a URL criada
+
+            // Exibe a mensagem de upload concluído com sucesso
+            showUploadSuccessMessage("Upload realizado com sucesso e arquivo baixado!");
         })
         .catch(error => {
             console.error("Erro no upload:", error);
