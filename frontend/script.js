@@ -1,3 +1,7 @@
+// Serviço único: o frontend é servido pelo mesmo FastAPI da API, então usamos
+// caminho relativo (mesma origem). Funciona igual em local e em produção.
+const API_BASE = "";
+
 document.getElementById("language-button").addEventListener("click", () => {
     const languageButton = document.getElementById("language-button");
     const flagIcon = languageButton.querySelector("img");
@@ -164,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showCarregando("block"); // Exibe a mensagem de carregando
 
         // Envia a requisição POST para o backend
-        fetch("https://api.investiga.seg.br/upload-pdf/", {
+        fetch(`${API_BASE}/upload-pdf/`, {
             method: "POST",
             body: formData,
         })

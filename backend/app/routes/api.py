@@ -38,7 +38,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     df_ips = pdf_service.extract_ips_from_pdf(file_path)
     resp_ip_consulta_api_ip = ip_service.consultar_api_ip(IPList(ips=df_ips["IP"].tolist()))
     # chamada do check-virustotal para cada IP
-    resp_ip_virustotal = ip_service.checar_virustotal(IPList(ips=df_ips["IP"].tolist()), "0599ef2145a358f649a363038cf91418a51934b4f95e4c0ce06a49060c3086ca")
+    resp_ip_virustotal = ip_service.checar_virustotal(IPList(ips=df_ips["IP"].tolist()), os.getenv("VIRUSTOTAL_API_KEY"))
     # whois
     resp_ip_whois = whois_service.consultar_whois(IPList(ips=df_ips["IP"].tolist()))
 

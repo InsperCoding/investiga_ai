@@ -4,11 +4,10 @@ import pandas as pd
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
 
-from langchain.chat_models import ChatOpenAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.vectorstores import FAISS
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_classic.chains import RetrievalQA
+from langchain_community.vectorstores import FAISS
 
 # Carregar variáveis de ambiente (.env)
 load_dotenv()

@@ -1,7 +1,8 @@
-# Use imagem base do Python
+# Dockerfile de serviço único: FastAPI serve a API e também o frontend estático.
+# Build a partir da RAIZ do projeto (contexto = investiga_ai/).
 FROM python:3.13-slim
 
-# Instalar dependências do sistema para Chrome + ChromeDriver
+# Dependências de sistema para Chrome + ChromeDriver (usado pelo WHOIS via Selenium)
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -23,37 +24,35 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Instalar Google Chrome
+# Google Chrome
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && apt-get install -y google-chrome-stable
 
-# Instalar ChromeDriver compatível
-RUN CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}' | cut -d '.' -f 1) && \
-    DRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | \
+# ChromeDriver compatível
+RUN DRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | \
     jq -r ".channels.Stable.version") && \
     curl -sSL https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${DRIVER_VERSION}/linux64/chromedriver-linux64.zip -o /tmp/chromedriver.zip && \
     unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
     mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
     chmod +x /usr/local/bin/chromedriver
 
-# Criar diretório de trabalho
 WORKDIR /app
 
-# Copiar os arquivos de requisitos e instalar dependências Python
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+# Dependências Python do backend
+COPY backend/requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn
 
-# Instalar Gunicorn
-RUN pip install gunicorn
+# Código do backend (vira a raiz /app, onde está o main.py)
+COPY backend/ /app/
 
-# Copiar o código da aplicação
-COPY . .
+# Frontend estático servido pelo FastAPI (ver app/__init__.py)
+COPY frontend/ /app/frontend_static/
 
-# Expor a porta (Cloud Run injeta $PORT, default 8080)
+# Cloud Run injeta $PORT (default 8080).
 EXPOSE 8080
 
-# Rodar a aplicação com Gunicorn e Uvicorn Worker.
-# Forma shell para que ${PORT} seja expandido em runtime (Cloud Run define PORT).
-# Poucos workers porque cada request pode abrir um Chrome (Selenium) — muitos workers estouram memória.
+# Poucos workers: cada request pode abrir um Chrome (Selenium) — muitos estouram memória.
 CMD exec gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:${PORT:-8080} --timeout 300

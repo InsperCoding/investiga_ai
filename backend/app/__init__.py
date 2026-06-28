@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.routes import router as api_router
 
 app = FastAPI(
@@ -16,9 +18,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Se o frontend rodar separado, não há necessidade de montar templates ou arquivos estáticos.
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-# from fastapi.templating import Jinja2Templates
-# templates = Jinja2Templates(directory="templates")
-
+# Rotas da API (devem ser registradas antes do mount estático em "/").
 app.include_router(api_router)
+
+# Serviço único: o próprio FastAPI serve o frontend estático.
+# Procura a pasta do frontend em ordem: env var, layout do container, layout de dev local.
+_here = os.path.dirname(__file__)
+_frontend_candidates = [
+    os.getenv("FRONTEND_DIR"),
+    os.path.join(_here, "..", "frontend_static"),   # container (COPY frontend/ -> /app/frontend_static)
+    os.path.join(_here, "..", "..", "frontend"),     # dev local (../../frontend)
+]
+for _dir in _frontend_candidates:
+    if _dir and os.path.isdir(_dir):
+        app.mount("/", StaticFiles(directory=_dir, html=True), name="frontend")
+        break
