@@ -1,54 +1,68 @@
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import requests
 from app.schemas.ip_list import IPList
 
+# RDAP é o sucessor moderno do WHOIS: protocolo HTTP/JSON, sem chave e sem navegador.
+# rdap.org é um "bootstrap" que redireciona automaticamente para o RIR correto
+# (LACNIC para IPs do Brasil, ARIN/RIPE/APNIC para os demais).
+RDAP_URL = "https://rdap.org/ip/{ip}"
+TIMEOUT = 15
+TENTATIVAS = 2
+
+
+def _extrair_nome_vcard(entity: dict):
+    """Extrai o nome (campo 'fn') do vCard de uma entidade RDAP, se existir."""
+    vcard = entity.get("vcardArray")
+    if not vcard or len(vcard) < 2:
+        return None
+    # vcard[1] é uma lista de campos no formato [nome, params, tipo, valor]
+    for campo in vcard[1]:
+        if len(campo) >= 4 and campo[0] == "fn" and campo[3]:
+            return campo[3]
+    return None
+
+
+def _extrair_owner(data: dict) -> str:
+    """Determina o 'dono' do IP a partir da resposta RDAP."""
+    entities = data.get("entities", []) or []
+
+    # 1) Preferir a entidade responsável, na ordem de papéis mais úteis.
+    for papel_alvo in ("registrant", "administrative", "technical", "abuse"):
+        for ent in entities:
+            if papel_alvo in (ent.get("roles") or []):
+                nome = _extrair_nome_vcard(ent)
+                if nome:
+                    return nome
+
+    # 2) Qualquer entidade que tenha um nome.
+    for ent in entities:
+        nome = _extrair_nome_vcard(ent)
+        if nome:
+            return nome
+
+    # 3) Fallback: nome/handle da própria rede.
+    return data.get("name") or data.get("handle") or "Nenhuma informação encontrada"
+
+
 def consultar_whois(lista_ips: IPList) -> dict:
+    """
+    Consulta o proprietário (owner) de cada IP via RDAP — protocolo padrão, sem navegador.
+    Mantém a mesma assinatura/retorno da versão anterior: {ip: nome_do_responsavel}.
+    """
     resultados = {}
-
-    # Configuração do navegador (sem headless para debug visual)
-    chrome_options = Options()
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--headless")  # Descomente se quiser rodar em segundo plano
-
-    navegador = webdriver.Chrome(options=chrome_options)
-    wait = WebDriverWait(navegador, 10)
-
-    navegador.get('https://registro.br/tecnologia/ferramentas/whois?search=')
+    headers = {"Accept": "application/rdap+json"}
 
     for ip in lista_ips.ips:
-        try:
-            # Aguarda o campo de busca aparecer
-            box = wait.until(EC.presence_of_element_located((By.ID, 'whois-field')))
-            box.clear()
-            box.send_keys(ip)
-            box.send_keys(Keys.RETURN)
-
-            # Aguarda o carregamento da tabela de resultado
+        resultados[ip] = "Erro na consulta"
+        for tentativa in range(1, TENTATIVAS + 1):
             try:
-                dono = wait.until(EC.presence_of_element_located(
-                    (By.XPATH, '//*[@id="conteudo"]/div/section/div[2]/div[2]/div/div/div[1]/div/table/tbody/tr[3]/td')
-                ))
-                texto_extraido = dono.text.strip()
-                print(f"Texto extraído: {texto_extraido}")
-                if not texto_extraido:
-                    texto_extraido = "Nenhuma informação encontrada"
+                resp = requests.get(RDAP_URL.format(ip=ip), headers=headers, timeout=TIMEOUT)
+                if resp.status_code == 200:
+                    resultados[ip] = _extrair_owner(resp.json())
+                else:
+                    print(f"[{ip}] RDAP retornou status {resp.status_code}")
+                    resultados[ip] = "Nenhuma informação encontrada"
+                break  # sucesso ou resposta definitiva: não tenta de novo
             except Exception as e:
-                print(f"[{ip}] Erro ao localizar dono: {e}")
-                texto_extraido = "Nenhuma informação encontrada"
+                print(f"[{ip}] Tentativa {tentativa}/{TENTATIVAS} falhou: {e}")
 
-            resultados[ip] = texto_extraido
-        except Exception as e:
-            print(f"[{ip}] Erro ao consultar o IP: {e}")
-            resultados[ip] = "Erro na consulta"
-
-        time.sleep(1.5)  # Aguardar entre requisições para evitar bloqueios
-
-    navegador.quit()
     return resultados
